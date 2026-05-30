@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>도레미 점프! 단계별 계이름 게임 👑❤️</title>
+    <style>
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 750px;
+            height: 550px;
+            background: white;
+            border: 4px solid #ffb6c1;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        /* 기본 오선지 */
+        .staff-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #222;
+        }
+        #line1 { top: 160px; } 
+        #line2 { top: 190px; } 
+        #line3 { top: 220px; } 
+        #line4 { top: 250px; } 
+        #line5 { top: 280px; } 
+
+        /* 덧줄 레이어 */
+        .extra-line {
+            position: absolute;
+            width: 60px;
+            height: 2px;
+            background-color: #222;
+            left: 130px; 
+            display: none;
+            z-index: 5;
+        }
+
+        /* 단일 발자국 🐾 */
+        #character {
+            position: absolute;
+            left: 140px;
+            width: 40px;
+            height: 40px;
+            line-height: 40px; 
+            text-align: center;
+            font-size: 38px;
+            margin-top: -20px; 
+            transition: top 0.08s ease-out;
+            z-index: 10;
+            user-select: none;
+        }
+
+        /* UI 상단 패널 */
+        #ui-panel {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4a4a4a;
+            z-index: 20;
+            padding: 0 5px;
+            box-sizing: border-box;
+        }
+        .status-box {
+            background: #ffe4e1;
+            padding: 5px 10px;
+            border-radius: 12px;
+            border: 2px solid #ffb6c1;
+Text-align: center;
+        }
+        #question-box {
+            background: #fff0f5;
+            border: 3px dashed #ff6b81;
+            font-size: 22px;
+            padding: 3px 15px;
+        }
+
+        /* 👑 [공주님 오더 반영] 터치패널 컨트롤러를 하단 정중앙으로 배치! */
+        #mobile-controller {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%); /* 정확히 가로 정중앙 정렬 스크립트 */
+            display: flex;
+            gap: 15px; /* 조작하기 편하게 버튼 간격 널찍하게 조절 */
+            z-index: 40;
+        }
+        .touch-btn {
+            background-color: #ff8b9e;
+            color: white;
+            border: none;
+            border-radius: 15px; /* 터치감 좋게 둥글게 스케일업 */
+            width: 55px;
+            height: 55px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .touch-btn:active {
+            background-color: #ff4757;
+        }
+        /* 정답 제출 버튼 중앙 최적화 디자인 */
+        #btn-submit {
+            width: 110px;
+            font-size: 16px;
+            background-color: #ff6b81;
+        }
+
+        /* 볼륨 패널 (컨트롤러와 절대 안 겹치게 우측 끝단 배치) */
+        #volume-panel {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            background: rgba(255, 240, 245, 0.9);
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #ffb6c1;
+            font-size: 13px;
+            font-weight: bold;
+            color: #4a4a4a;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 30;
+        }
+        #volume-slider {
+            cursor: pointer;
+            accent-color: #ff6b81;
+            vertical-align: middle;
+            width: 65px;
+        }
+
+        /* 피드백 및 힌트 메시지 출력 창 */
+        #message {
+            position: absolute;
+            bottom: 85px; /* 버튼 크기가 커졌으므로 겹침 방지를 위해 85px로 정렬 */
+            width: 100%;
+            text-align: center;
+            font-size: 20px; 
+            font-weight: bold;
+            color: #ff4757;
+            z-index: 20;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        /* 오버레이 팝업창 */
+        #screen-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #overlay-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #ff4757;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .score-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff4757;
+            background: #fff0f5;
+            padding: 8px 20px;
+            border-radius: 12px;
+            margin: 5px 0;
+            border: 1px dashed #ff6b81;
+            min-width: 220px;
+            text-align: center;
+        }
+        .game-btn {
+            background-color: #ff6b81;
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        #guide { margin-top: 15px; color: #666; font-size: 13px; text-align: center; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: #ff6b81; margin-bottom: 10px; text-align:center; font-size: 22px;">🎵 도레미 점프! 완벽 오선보 트레이닝 👑❤️</h2>
+
+    <div id="game-container">
+        <!-- UI 정보창 -->
+        <div id="ui-panel">
+            <div class="status-box" id="level-box">레벨<br><span id="current-level">1</span>/10</div>
+            <div class="status-box" id="question-box">문제: <span id="target-note">도</span><br>(<span id="count-box">1</span>/5)</div>
+            <div class="status-box" id="life-box">목숨<br><span id="life-icons">❤️❤️❤️❤️❤️</span></div>
+        </div>
+
+        <!-- 정규 오선지 다섯 줄 -->
+        <div class="staff-line" id="line1"></div>
+        <div class="staff-line" id="line2"></div>
+        <div class="staff-line" id="line3"></div>
+        <div class="staff-line" id="line4"></div>
+        <div class="staff-line" id="line5"></div>
+
+        <!-- 덧줄 레이어 -->
+        <div class="extra-line" id="ex-line-down1" style="top: 310px;"></div> 
+        <div class="extra-line" id="ex-line-up1" style="top: 130px;"></div>   
+        <div class="extra-line" id="ex-line-up2" style="top: 100px;"></div>   
+
+        <!-- 플레이어 캐릭터 발자국 -->
+        <div id="character">🐾</div>
+
+        <!-- 📱 모바일/태블릿 터치 스크린 전용 버튼 컨트롤 패널 (가운데 정렬 배치 완벽 패치) -->
+        <div id="mobile-controller">
+            <button class="touch-btn" id="btn-up" onclick="moveUp()">▲</button>
+            <button class="touch-btn" id="btn-submit" onclick="submitAnswer()">🐾 정답제출</button>
+            <button class="touch-btn" id="btn-down" onclick="moveDown()">▼</button>
+        </div>
+
+        <!-- 볼륨 조절기 슬라이더 패널 -->
+        <div id="volume-panel">
+            🔊 <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.3" oninput="updateVolume(this.value)">
+        </div>
+
+        <!-- 피드백 메시지 -->
+        <div id="message">화면을 툭 터치하면 귀여운 음악과 함께 게임이 시작됩니다! 🐾</div>
+
+        <!-- 오버레이 결과창 -->
+        <div id="screen-overlay">
+            <div id="overlay-title">결과 메시지</div>
+            <div id="agility-score" class="score-display">⚡ 당신의 순발력: 0점</div>
+            <div id="accuracy-score" class="score-display">🎯 당신의 정확도: 0%</div>
+            <button id="overlay-btn" class="game-btn" onclick="handleOverlayClick()">다음 단계로 ➡️</button>
+        </div>
+    </div>
+
+    <div id="guide">
+        <strong>[조작방법]</strong> PC: 방향키(▲/▼) & 스페이스바 | 모바일/태블릿: 화면 하단 버튼 터치
+    </div>
+
+<script>
+    const positions = {
+        '도': 310, '레': 295, '미': 280, '파': 265, '솔': 250, '라': 235, '시': 220,
+        '높은도': 205, '높은레': 190, '높은미': 175, '높은파': 160, '높은솔': 145, '높은라': 130, '높은시': 115, '더높은도': 100
+    };
+    
+    const notesPool = ['도', '레', '미', '파', '솔', '라', '시', '높은도', '높은레', '높은미', '높은파', '높은솔', '높은라', '높은시', '더높은도'];
+
+    const levelNotes = {
+        1: ['도', '레', '미'], 2: ['미', '파', '솔'], 3: ['솔', '라', '시', '높은도'], 
+        4: ['도', '레', '미', '파', '솔', '라', '시', '높은도'], 5: ['높은도', '높은레', '높은미', '높은파'], 
+        6: ['높은파', '높은솔', '높은라'], 7: ['높은라', '높은시', '더높은도'], 
+        8: ['도', '미', '솔', '시', '높은레', '높은파', '높은라', '더높은도'], 
+        9: ['레', '파', '라', '높은도', '높은미', '높은솔', '높은시'], 
+        10: ['도', '레', '미', '파', '솔', '라', '시', '높은도', '높은레', '높은미', '높은파', '높은솔', '높은라', '높은시', '더높은도'] 
+    };
+
+    const frequencies = {
+        '도': 261.63, '레': 293.66, '미': 329.63, '파': 349.23, '솔': 392.00, '라': 440.00, '시': 493.88,
+        '높은도': 523.25, '높은레': 587.33, '높은미': 659.25, '높은파': 698.46, '높은솔': 783.99, '높은라': 880.00, '높은시': 987.77, '더높은도': 1046.50
+    };
+
+    const hintMentions = {
+        '도': "아래 첫째 줄이에요! 🐾",
+        '레': "아래 첫째 칸(오선지 바로 밑)이에요! 🐾",
+        '미': "첫 번째 줄이에요! 🐾",
+        '파': "첫 번째 칸이에요! 🐾",
+        '솔': "두 번째 줄이에요! 🐾",
+        '라': "두 번째 칸이에요! 🐾",
+        '시': "세 번째 줄이에요! 🐾",
+        '높은도': "세 번째 칸이에요! 🐾",
+        '높은레': "네 번째 줄이에요! 🐾",
+        '높은미': "네 번째 칸이에요! 🐾",
+        '높은파': "다섯 번째 줄이에요! 🐾",
+        '높은솔': "위 첫째 칸이에요! 🐾",
+        '높은라': "위 첫째 줄이에요! 🐾",
+        '높은시': "위 둘째 칸이에요! 🐾",
+        '더높은도': "위 둘째 줄이에요! 🐾"
+    };
+
+    let currentLevel = 1;
+    let questionCount = 1; 
+    let lives = 5; 
+    let currentTarget = '';
+    let currentYIndex = 2; 
+
+    let questionStartTime = 0;
+    let totalReactionTime = 0; 
+    let currentLevelCorrectAnswers = 0; 
+    let currentLevelTotalAttempts = 0; 
+    let wrongAnswerChain = 0; 
+
+    let masterVolume = 0.3;
+    let isJudging = false; 
+
+    const character = document.getElementById('character');
+    const targetNoteElement = document.getElementById('target-note');
+    const levelElement = document.getElementById('current-level');
+    const countElement = document.getElementById('count-box');
+    const lifeIconsElement = document.getElementById('life-icons');
+    const messageElement = document.getElementById('message');
+    const overlay = document.getElementById('screen-overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayBtn = document.getElementById('overlay-btn');
+    const agilityScoreDisplay = document.getElementById('agility-score');
+    const accuracyScoreDisplay = document.getElementById('accuracy-score');
+    const volumeSlider = document.getElementById('volume-slider');
+
+    let audioCtx = null;
+    let bgmTicker = null;
+    let isBGMPlaying = false;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        if (!isBGMPlaying) {
+            startSystemBGM();
+        }
+    }
+
+    function updateVolume(val) {
+        masterVolume = parseFloat(val);
+        volumeSlider.blur(); 
+    }
+
+    function playTone(freq, type, duration, volume = 0.3, timeOffset = 0) {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + timeOffset);
+        const finalVolume = volume * masterVolume;
+        gain.gain.setValueAtTime(finalVolume, audioCtx.currentTime + timeOffset);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + timeOffset + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + timeOffset);
+        osc.stop(audioCtx.currentTime + timeOffset + duration);
+    }
+
+    function playPianoTone(freq, duration, volume = 0.4, timeOffset = 0) {
+        initAudio();
+        const now = audioCtx.currentTime + timeOffset;
+        const partials = [
+            { f: freq,       v: 1.0,  type: 'sine' },     
+            { f: freq * 2,   v: 0.5,  type: 'triangle' }, 
+            { f: freq * 3,   v: 0.2,  type: 'sine' },     
+            { f: freq * 4,   v: 0.1,  type: 'triangle' }  
+        ];
+        partials.forEach(p => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = p.type;
+            osc.frequency.setValueAtTime(p.f, now);
+            const finalVol = volume * p.v * masterVolume;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(finalVol, now + 0.02); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration); 
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        });
+    }
+
+    function startSystemBGM() {
+        isBGMPlaying = true;
+        let step = 0;
+        const melody = [
+            392.00, 392.00, 440.00, 440.00, 392.00, 392.00, 329.63, 0,
+            392.00, 392.00, 329.63, 329.63, 293.66, 0, 0, 0,
+            392.00, 392.00, 440.00, 440.00, 392.00, 392.00, 329.63, 0,
+            392.00, 329.63, 293.66, 329.63, 261.63, 0, 0, 0
+        ]; 
+        bgmTicker = setInterval(() => {
+            if (!isBGMPlaying) return;
+            let currentFreq = melody[step % melody.length];
+            if (currentFreq > 0) {
+                playTone(currentFreq * 2, 'triangle', 0.25, 0.04);
+                if (step % 2 === 0) {
+                    playTone(currentFreq, 'sine', 0.3, 0.02);
+                }
+            }
+            step++;
+        }, 250); 
+    }
+
+    function stopSystemBGM() {
+        isBGMPlaying = false;
+        if (bgmTicker) clearInterval(bgmTicker);
+    }
+
+    function playSuccessSound(targetNote) {
+        playTone(523.25, 'sine', 0.1, 0.3); 
+        setTimeout(() => playTone(659.25, 'sine', 0.1, 0.3), 60); 
+        setTimeout(() => playTone(783.99, 'sine', 0.15, 0.3), 120); 
+        setTimeout(() => { playPianoTone(frequencies[targetNote], 0.8, 0.5); }, 400);
+    }
+
+    function playFailSound(targetNote) {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160.00, now); 
+        osc.frequency.linearRampToValueAtTime(90.00, now + 0.4); 
+        const finalVol = 0.3 * masterVolume;
+        gain.gain.setValueAtTime(finalVol, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(now + 0.4);
+        setTimeout(() => { playPianoTone(frequencies[targetNote], 0.8, 0.5); }, 500);
+    }
+
+    function playDomiSolDottedFanfare() {
+        initAudio();
+        playPianoTone(frequencies['도'], 0.5, 0.5, 0.0);   
+        playPianoTone(frequencies['미'], 0.5, 0.5, 0.2);   
+        playPianoTone(frequencies['솔'], 0.5, 0.5, 0.4);   
+        playPianoTone(frequencies['미'], 0.4, 0.5, 0.7);   
+        playPianoTone(frequencies['솔'], 0.2, 0.5, 1.0);   
+        playPianoTone(frequencies['높은도'], 1.2, 0.6, 1.15); 
+    }
+
+    function manageExtraLines(noteName) {
+        document.getElementById('ex-line-down1').style.display = (noteName === '도') ? 'block' : 'none';
+        document.getElementById('ex-line-up1').style.display = (noteName === '높은라') ? 'block' : 'none';
+        document.getElementById('ex-line-up2').style.display = (noteName === '더높은도') ? 'block' : 'none';
+    }
+
+    function nextQuestion() {
+        isJudging = false; 
+        wrongAnswerChain = 0; 
+        const activeNotes = levelNotes[currentLevel];
+        const randomIndex = Math.floor(Math.random() * activeNotes.length);
+        currentTarget = activeNotes[randomIndex];
+        
+        let displayName = currentTarget;
+        if(currentTarget === '높은도') displayName = '높은 도';
+        if(currentTarget === '높은레') displayName = '높은 레';
+        if(currentTarget === '높은미') displayName = '높은 미';
+        if(currentTarget === '높은파') displayName = '높은 파';
+        if(currentTarget === '높은솔') displayName = '높은 솔';
+        if(currentTarget === '높은라') displayName = '높은 라';
+        if(currentTarget === '높은시') displayName = '높은 시';
+        if(currentTarget === '더높은도') displayName = '더 높은 도';
+
+        targetNoteElement.innerText = displayName;
+        countElement.innerText = questionCount;
+        levelElement.innerText = currentLevel;
+        updateLifeDisplay();
+        questionStartTime = Date.now();
+    }
+
+    function updateLifeDisplay() {
+        lifeIconsElement.innerText = '❤️'.repeat(lives) + '💔'.repeat(5 - lives);
+    }
+
+    function updateCharacterPosition() {
+        const currentNoteName = notesPool[currentYIndex];
+        character.style.top = positions[currentNoteName] + 'px';
+        manageExtraLines(currentNoteName);
+    }
+
+    function calculateAgilityScore() {
+        if(currentLevelCorrectAnswers === 0) return 0;
+        let averageTimeSec = (totalReactionTime / currentLevelCorrectAnswers) / 1000;
+        let baseScore = Math.round(100 - (averageTimeSec * 7));
+        if (baseScore > 100) baseScore = 100;
+        if (baseScore < 40) baseScore = 40; 
+        return baseScore;
+    }
+
+    function calculateAccuracyScore() {
+        if(currentLevelTotalAttempts === 0) return 0;
+        return Math.round((currentLevelCorrectAnswers / currentLevelTotalAttempts) * 100);
+    }
+
+    function handleOverlayClick() {
+        overlay.style.display = 'none';
+        if(lives <= 0) {
+            questionCount = 1;
+            lives = 5; 
+            currentYIndex = 2;
+            totalReactionTime = 0;
+            currentLevelCorrectAnswers = 0;
+            currentLevelTotalAttempts = 0;
+            if(!isBGMPlaying) startSystemBGM();
+            nextQuestion();
+            updateCharacterPosition();
+        } else if (currentLevel > 10) {
+            currentLevel = 1;
+            questionCount = 1;
+            lives = 5;
+            currentYIndex = 2;
+            totalReactionTime = 0;
+            currentLevelCorrectAnswers = 0;
+            currentLevelTotalAttempts = 0;
+            if(!isBGMPlaying) startSystemBGM();
+            nextQuestion();
+            updateCharacterPosition();
+        } else {
+            nextQuestion();
+        }
+    }
+
+    function moveUp() {
+        initAudio();
+        if (overlay.style.display === 'flex' || isJudging) return;
+        if (currentYIndex < notesPool.length - 1) {
+            currentYIndex++;
+            updateCharacterPosition();
+        }
+    }
+
+    function moveDown() {
+        initAudio();
+        if (overlay.style.display === 'flex' || isJudging) return;
+        if (currentYIndex > 0) {
+            currentYIndex--;
+            updateCharacterPosition();
+        }
+    }
+
+    function submitAnswer() {
+        initAudio();
+        if (overlay.style.display === 'flex' || isJudging) return;
+        
+        isJudging = true;
+        const playerCurrentNote = notesPool[currentYIndex];
+        let elapsed = Date.now() - questionStartTime;
+        currentLevelTotalAttempts++;
+
+        const isCorrect = (playerCurrentNote === currentTarget);
+
+        if (isCorrect) {
+            totalReactionTime += elapsed;
+            currentLevelCorrectAnswers++;
+            playSuccessSound(currentTarget); 
+            messageElement.innerText = `🎉 정답입니다! 다음 문제로 고고!`;
+            
+            setTimeout(() => {
+                if (questionCount >= 5) {
+                    let agility = calculateAgilityScore(); 
+                    let accuracy = calculateAccuracyScore(); 
+                    
+                    agilityScoreDisplay.innerText = `⚡ 당신의 순발력: ${agility}점`;
+                    accuracyScoreDisplay.innerText = `🎯 당신의 정확도: ${accuracy}%`;
+                    agilityScoreDisplay.style.display = 'block';
+                    accuracyScoreDisplay.style.display = 'block';
+
+                    if (currentLevel >= 10) {
+                        stopSystemBGM(); 
+                        playDomiSolDottedFanfare(); 
+                        overlayTitle.innerHTML = `👑 와우, 당신은 혹시 계이름의...신?! 👑<br><span style='font-size:18px; color:#4a4a4a;'>마지막 10단계 최종 클리어 완료! ❤️</span>`;
+                        overlayBtn.innerText = "처음부터 다시하기 🔁";
+                        currentLevel++; 
+                        overlay.style.display = 'flex';
+                    } else {
+                        overlayTitle.innerHTML = `🚀 대단해요! 레벨 업 챌린지!🚀<br><span style='font-size:18px; color:#4a4a4a;'>축하합니다! ${currentLevel + 1}단계로 전진!</span>`;
+                        overlayBtn.innerText = `신나게 ${currentLevel + 1}단계 시작하기 ➡️`;
+                        currentLevel++;
+                        questionCount = 1;
+                        totalReactionTime = 0; 
+                        currentLevelCorrectAnswers = 0;
+                        currentLevelTotalAttempts = 0; 
+                        overlay.style.display = 'flex';
+                    }
+                } else {
+                    questionCount++;
+                    nextQuestion(); 
+                }
+            }, 1100);
+        } else {
+            lives--;
+            wrongAnswerChain++; 
+            updateLifeDisplay();
+            playFailSound(currentTarget); 
+            
+            if (wrongAnswerChain >= 2) {
+                const specificHint = hintMentions[currentTarget] || "오선지를 잘 보고 다시 맞춰보세요! 🐾";
+                messageElement.innerHTML = `<span style='color: #2e86de; font-size:16px;'>💡 힌트: ${currentTarget} 자리는 ${specificHint}</span>`;
+            } else {
+                messageElement.innerText = `😭 틀렸어요! 오선지 위치를 다시 봐요!`;
+            }
+            
+            setTimeout(() => {
+                if (lives <= 0) {
+                    stopSystemBGM(); 
+                    let agility = calculateAgilityScore();
+                    let accuracy = calculateAccuracyScore();
+                    agilityScoreDisplay.innerText = `⚡ 당신의 순발력: ${agility}점`;
+                    accuracyScoreDisplay.innerText = `🎯 당신의 정확도: ${accuracy}%`;
+                    
+                    overlayTitle.innerHTML = `💔 아쉽지만 목숨을 모두 잃었어요! 💔<br><span style='font-size:18px; color:#666;'>포기하지 마세요! <b>${currentLevel}단계</b>에서 다시 도전해 볼까요?</span>`;
+                    overlayBtn.innerText = `${currentLevel}단계 이어하기 🔁`;
+                    overlay.style.display = 'flex';
+                } else {
+                    isJudging = false; 
+                }
+            }, 1100);
+        }
+    }
+
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowUp') { e.preventDefault(); moveUp(); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveDown(); }
+        if (e.key === ' ') { e.preventDefault(); submitAnswer(); }
+    });
+
+    window.addEventListener('click', function(e) { 
+        if(e.target.classList.contains('touch-btn') || e.target.id === 'volume-slider') return;
+        initAudio(); 
+        volumeSlider.blur(); 
+    });
+    window.addEventListener('touchstart', function(e) { 
+        if(e.target.classList.contains('touch-btn') || e.target.id === 'volume-slider') return;
+        initAudio(); 
+    });
+
+    nextQuestion();
+    updateCharacterPosition();
+</script>
+
+</body>
+</html>
